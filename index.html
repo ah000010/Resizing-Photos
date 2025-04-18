@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تغییر سایز و فرمت عکس | گلس مورفیسم</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&display=swap" rel="stylesheet">
+    <!-- منیفست و آیکون‌های PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#6b5ce7">
+    <link rel="icon" href="icons/favicon.ico">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    <!-- کتابخانه‌های مورد نیاز -->
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@svgdotjs/svg.js@3.1.2/dist/svg.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/potrace@2.1.8/potrace.min.js"></script>
+</head>
+<body>
+    <div class="background">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+    </div>
+
+    <div class="container">
+        <header class="glass-card">
+            <div class="header-top">
+                <button id="theme-toggle" class="theme-toggle" aria-label="تغییر حالت روز/شب">
+                    <svg class="sun-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 17C14.7614 17 17 14.7614 17 12C17 9.23858 14.7614 7 12 7C9.23858 7 7 9.23858 7 12C7 14.7614 9.23858 17 12 17Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M12 1V3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M12 21V23" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M4.22 4.22L5.64 5.64" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M18.36 18.36L19.78 19.78" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M1 12H3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M21 12H23" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M4.22 19.78L5.64 18.36" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M18.36 5.64L19.78 4.22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <svg class="moon-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </div>
+            <h1>تغییر سایز و فرمت عکس</h1>
+            <p>با این ابزار، تصاویر خود را به ۱۵ سایز مختلف پرکاربرد تبدیل کنید و فرمت آن‌ها را تغییر دهید</p>
+            <div id="install-container" class="install-container" hidden>
+                <button id="install-btn" class="install-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 16L12 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M9 13L12 16L15 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M20 16V18C20 19.1046 19.1046 20 18 20H6C4.89543 20 4 19.1046 4 18V16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    نصب برنامه
+                </button>
+            </div>
+        </header>
+
+        <div class="upload-container glass-card">
+            <div class="upload-area" id="drop-area">
+                <div class="upload-icon">
+                    <svg width="50" height="50" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 16L12 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M9 11L11.913 8.087V8.087C11.961 8.039 12.039 8.039 12.087 8.087V8.087L15 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M3 15L3 16L3 19C3 20.1046 3.89543 21 5 21L19 21C20.1046 21 21 20.1046 21 19L21 16L21 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <h3>تصویر خود را اینجا رها کنید</h3>
+                <p>یا برای انتخاب فایل کلیک کنید</p>
+                <input type="file" id="file-input" accept="image/*" hidden>
+                <button class="upload-btn" id="select-btn">انتخاب تصویر</button>
+            </div>
+            <div id="file-info" class="file-info" hidden>
+                <div class="file-preview">
+                    <img id="preview-image" src="" alt="پیش‌نمایش تصویر">
+                </div>
+                <div class="file-details">
+                    <h4 id="file-name">نام فایل</h4>
+                    <p id="file-size">حجم فایل</p>
+                    <p id="file-dimensions">ابعاد تصویر</p>
+                </div>
+            </div>
+            
+            <div id="format-options" class="format-options" hidden>
+                <h3>انتخاب فرمت خروجی</h3>
+                <div class="format-grid">
+                    <div class="format-item">
+                        <input type="radio" name="format" id="format-original" value="original" checked>
+                        <label for="format-original">حفظ فرمت اصلی</label>
+                    </div>
+                    <div class="format-item">
+                        <input type="radio" name="format" id="format-png" value="png">
+                        <label for="format-png">PNG</label>
+                    </div>
+                    <div class="format-item">
+                        <input type="radio" name="format" id="format-jpeg" value="jpeg">
+                        <label for="format-jpeg">JPEG</label>
+                    </div>
+                    <div class="format-item">
+                        <input type="radio" name="format" id="format-webp" value="webp">
+                        <label for="format-webp">WebP</label>
+                    </div>
+                    <div class="format-item">
+                        <input type="radio" name="format" id="format-svg" value="svg">
+                        <label for="format-svg">SVG</label>
+                    </div>
+                </div>
+                
+                <!-- تنظیمات کیفیت برای JPEG و WebP -->
+                <div id="quality-container" class="quality-container" hidden>
+                    <label for="quality-slider">کیفیت تصویر: <span id="quality-value">90%</span></label>
+                    <input type="range" id="quality-slider" min="10" max="100" value="90" class="quality-slider">
+                </div>
+                
+                <!-- بخش جدید تنظیم سایز دستی -->
+                <div class="custom-sizes-container">
+                    <div class="custom-sizes-header">
+                        <h3>تنظیم سایز دستی</h3>
+                        <label class="switch">
+                            <input type="checkbox" id="custom-sizes-toggle">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div id="custom-sizes-panel" class="custom-sizes-panel" hidden>
+                        <p class="help-text">اندازه‌های دلخواه خود را وارد کنید (عرض × ارتفاع)</p>
+                        
+                        <div id="custom-sizes-list">
+                            <div class="custom-size-item">
+                                <div class="size-inputs">
+                                    <input type="number" class="size-input width-input" placeholder="عرض" min="1" max="5000">
+                                    <span class="size-separator">×</span>
+                                    <input type="number" class="size-input height-input" placeholder="ارتفاع" min="1" max="5000">
+                                </div>
+                                <button class="remove-size" title="حذف این سایز" disabled>×</button>
+                            </div>
+                        </div>
+                        
+                        <div class="custom-size-controls">
+                            <button id="add-size-btn" class="add-size-btn">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 4V20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    <path d="M4 12H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                                افزودن سایز جدید
+                            </button>
+                        </div>
+                        
+                        <div class="preserve-ratio-container">
+                            <label class="preserve-ratio-label">
+                                <input type="checkbox" id="preserve-ratio" checked>
+                                حفظ نسبت تصویر اصلی
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <button id="start-conversion" class="start-btn">شروع تبدیل</button>
+            </div>
+        </div>
+
+        <div id="processing" class="glass-card processing" hidden>
+            <div class="spinner"></div>
+            <p>در حال تغییر سایز و فرمت تصویر...</p>
+            <div class="progress">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+            <p id="progress-text">۰ از ۱۵</p>
+        </div>
+
+        <div id="sizes-container" class="glass-card" hidden>
+            <h2>سایزهای پرکاربرد</h2>
+            <p>برای هر سایز می‌توانید به صورت جداگانه دانلود کنید یا همه را یکجا دریافت نمایید</p>
+            
+            <div class="sizes-grid" id="sizes-grid">
+                <!-- سایزها به صورت پویا اینجا اضافه می‌شوند -->
+            </div>
+            
+            <div class="download-all">
+                <button id="download-zip" class="download-btn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 15L12 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M16 11L12.087 14.913V14.913C12.039 14.961 11.961 14.961 11.913 14.913V14.913L8 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M20 21H4C3.44772 21 3 20.5523 3 20V18C3 17.4477 3.44772 17 4 17H20C20.5523 17 21 17.4477 21 18V20C21 20.5523 20.5523 21 20 21Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    دانلود همه سایزها (ZIP)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script src="sw-register.js"></script>
+</body>
+</html> 
