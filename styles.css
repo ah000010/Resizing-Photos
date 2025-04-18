@@ -883,4 +883,36 @@ input:checked + .slider:before {
     .custom-sizes-header h3 {
         font-size: 1rem;
     }
+}
+
+/* استایل‌های مربوط به هشدارهای fallback */
+.fallback-alert {
+    background: rgba(254, 215, 170, 0.7);
+    border-left: 4px solid #f59e0b;
+    border-radius: 6px;
+    padding: 15px;
+    margin: 15px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+[data-theme="dark"] .fallback-alert {
+    background: rgba(251, 146, 60, 0.2);
+    border-left: 4px solid #f59e0b;
+}
+
+.fallback-alert-icon {
+    color: #d97706;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.fallback-alert-text {
+    color: #78350f;
+    font-size: 0.95rem;
+}
+
+[data-theme="dark"] .fallback-alert-text {
+    color: #fcd34d;
 } 

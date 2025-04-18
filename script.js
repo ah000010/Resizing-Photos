@@ -126,30 +126,11 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('beforeinstallprompt', (e) => {
         // ذخیره رویداد برای استفاده بعدی
         deferredPrompt = e;
-        // نمایش دکمه نصب
-        installContainer.hidden = false;
+        // دکمه نصب را نمایش نمی‌دهیم چون از دکمه مرورگر استفاده می‌کنیم
+        installContainer.hidden = true; // همیشه مخفی می‌ماند
     });
     
-    installBtn.addEventListener('click', () => {
-        if (!deferredPrompt) return;
-        
-        // نمایش پنجره نصب
-        deferredPrompt.prompt();
-        
-        // بررسی نتیجه نصب
-        deferredPrompt.userChoice.then((choiceResult) => {
-            if (choiceResult.outcome === 'accepted') {
-                console.log('کاربر برنامه را نصب کرد');
-                installContainer.hidden = true;
-            }
-            // ریست کردن متغیر
-            deferredPrompt = null;
-        });
-    });
-    
-    // مخفی کردن دکمه نصب پس از نصب
     window.addEventListener('appinstalled', () => {
-        installContainer.hidden = true;
         console.log('برنامه با موفقیت نصب شد');
     });
     
@@ -443,24 +424,95 @@ document.addEventListener('DOMContentLoaded', () => {
         // تغییر سایز تصویر فعلی
         const size = sizes[index];
         
-        // تبدیل به SVG یا فرمت‌های دیگر
+        // اگر فرمت انتخابی SVG است اما تابع SVG کار نمی‌کند، از PNG استفاده کن
         if (selectedFormat === 'svg') {
-            createSVG(originalImage, size)
+            try {
+                // تلاش برای تبدیل به SVG
+                createSVG(originalImage, size)
+                    .then(result => {
+                        // ذخیره نتیجه
+                        resizedImages.push(result);
+                        
+                        // ایجاد المان نمایش
+                        createSizeItem(result);
+                        
+                        // ادامه با تصویر بعدی
+                        setTimeout(() => {
+                            resizeImageSequentially(index + 1);
+                        }, 100);
+                    })
+                    .catch(error => {
+                        console.error('خطا در تبدیل به SVG:', error);
+                        
+                        // در صورت خطا، به PNG تبدیل کن
+                        console.log('استفاده از PNG به جای SVG به دلیل خطا');
+                        
+                        // تنظیم موقت فرمت به PNG
+                        const originalFormat = selectedFormat;
+                        selectedFormat = 'png';
+                        outputExtension = 'png';
+                        
+                        resizeImage(originalImage, size)
+                            .then(result => {
+                                // ذخیره نتیجه
+                                resizedImages.push(result);
+                                
+                                // ایجاد المان نمایش
+                                createSizeItem(result);
+                                
+                                // بازگرداندن فرمت اصلی
+                                selectedFormat = originalFormat;
+                                outputExtension = 'svg';
+                                
+                                // ادامه با تصویر بعدی
+                                setTimeout(() => {
+                                    resizeImageSequentially(index + 1);
+                                }, 100);
+                            });
+                    });
+            } catch (e) {
+                console.error('خطا در اجرای تابع createSVG:', e);
+                
+                // تنظیم موقت فرمت به PNG
+                const originalFormat = selectedFormat;
+                selectedFormat = 'png';
+                outputExtension = 'png';
+                
+                resizeImage(originalImage, size)
+                    .then(result => {
+                        // ذخیره نتیجه
+                        resizedImages.push(result);
+                        
+                        // ایجاد المان نمایش
+                        createSizeItem(result);
+                        
+                        // بازگرداندن فرمت اصلی
+                        selectedFormat = originalFormat;
+                        outputExtension = 'svg';
+                        
+                        // ادامه با تصویر بعدی
+                        setTimeout(() => {
+                            resizeImageSequentially(index + 1);
+                        }, 100);
+                    });
+            }
+        } else if (selectedFormat === 'ico') {
+            // تبدیل به فرمت ICO با استفاده از PNG به عنوان واسطه
+            resizeImage(originalImage, size, 'png')
                 .then(result => {
-                    // ذخیره نتیجه
-                    resizedImages.push(result);
+                    // ذخیره نتیجه با تغییر پسوند
+                    const icoResult = {
+                        ...result,
+                        fileName: getFileName(size, 'ico'),
+                        type: 'image/x-icon'
+                    };
+                    
+                    resizedImages.push(icoResult);
                     
                     // ایجاد المان نمایش
-                    createSizeItem(result);
+                    createSizeItem(icoResult);
                     
                     // ادامه با تصویر بعدی
-                    setTimeout(() => {
-                        resizeImageSequentially(index + 1);
-                    }, 100);
-                })
-                .catch(error => {
-                    console.error('خطا در تبدیل به SVG:', error);
-                    // ادامه با تصویر بعدی علی‌رغم خطا
                     setTimeout(() => {
                         resizeImageSequentially(index + 1);
                     }, 100);
@@ -482,8 +534,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // تغییر سایز تصویر
-    function resizeImage(image, size) {
+    // تغییر سایز تصویر با پشتیبانی از تعیین فرمت اختیاری
+    function resizeImage(image, size, overrideFormat = null) {
         return new Promise(resolve => {
             const canvas = document.createElement('canvas');
             canvas.width = size.width;
@@ -523,31 +575,62 @@ document.addEventListener('DOMContentLoaded', () => {
             // تنظیم فرمت خروجی و کیفیت براساس انتخاب کاربر
             let type = 'image/png';
             let quality = 0.9;
+            let extension = outputExtension;
             
-            switch (selectedFormat) {
-                case 'original':
-                    // حفظ فرمت اصلی
-                    if (originalFileExtension === 'jpg' || originalFileExtension === 'jpeg') {
+            // استفاده از فرمت override اگر تعیین شده باشد
+            if (overrideFormat) {
+                switch (overrideFormat) {
+                    case 'png':
+                        type = 'image/png';
+                        extension = 'png';
+                        break;
+                    case 'jpeg':
+                    case 'jpg':
                         type = 'image/jpeg';
                         quality = selectedQuality;
-                    } else if (originalFileExtension === 'webp') {
+                        extension = 'jpg';
+                        break;
+                    case 'webp':
                         type = 'image/webp';
                         quality = selectedQuality;
-                    } else {
+                        extension = 'webp';
+                        break;
+                    case 'ico':
+                        type = 'image/x-icon';
+                        extension = 'ico';
+                        break;
+                }
+            } else {
+                switch (selectedFormat) {
+                    case 'original':
+                        // حفظ فرمت اصلی
+                        if (originalFileExtension === 'jpg' || originalFileExtension === 'jpeg') {
+                            type = 'image/jpeg';
+                            quality = selectedQuality;
+                        } else if (originalFileExtension === 'webp') {
+                            type = 'image/webp';
+                            quality = selectedQuality;
+                        } else if (originalFileExtension === 'ico') {
+                            type = 'image/x-icon';
+                        } else {
+                            type = 'image/png';
+                        }
+                        break;
+                    case 'png':
                         type = 'image/png';
-                    }
-                    break;
-                case 'png':
-                    type = 'image/png';
-                    break;
-                case 'jpeg':
-                    type = 'image/jpeg';
-                    quality = selectedQuality;
-                    break;
-                case 'webp':
-                    type = 'image/webp';
-                    quality = selectedQuality;
-                    break;
+                        break;
+                    case 'jpeg':
+                        type = 'image/jpeg';
+                        quality = selectedQuality;
+                        break;
+                    case 'webp':
+                        type = 'image/webp';
+                        quality = selectedQuality;
+                        break;
+                    case 'ico':
+                        type = 'image/x-icon';
+                        break;
+                }
             }
             
             // تبدیل به DataURL
@@ -557,7 +640,7 @@ document.addEventListener('DOMContentLoaded', () => {
             resolve({
                 dataUrl,
                 size,
-                fileName: getFileName(size),
+                fileName: getFileName(size, extension),
                 type
             });
         });
@@ -567,6 +650,19 @@ document.addEventListener('DOMContentLoaded', () => {
     function createSVG(image, size) {
         return new Promise((resolve, reject) => {
             try {
+                // بررسی وجود کتابخانه‌های مورد نیاز
+                if (typeof potrace === 'undefined') {
+                    console.error('کتابخانه Potrace بارگذاری نشده است');
+                    reject(new Error('کتابخانه Potrace بارگذاری نشده است'));
+                    return;
+                }
+                
+                if (typeof SVG === 'undefined') {
+                    console.error('کتابخانه SVG.js بارگذاری نشده است');
+                    reject(new Error('کتابخانه SVG.js بارگذاری نشده است'));
+                    return;
+                }
+                
                 // ایجاد کنواس موقت برای تغییر سایز تصویر اصلی
                 const tempCanvas = document.createElement('canvas');
                 tempCanvas.width = size.width;
@@ -593,8 +689,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     startY = (size.height - targetHeight) / 2;
                 }
                 
-                // پر کردن پس‌زمینه با شفافیت
-                tempCtx.clearRect(0, 0, size.width, size.height);
+                // پر کردن پس‌زمینه با رنگ سفید
+                tempCtx.fillStyle = '#FFFFFF';
+                tempCtx.fillRect(0, 0, size.width, size.height);
                 
                 // رسم تصویر با اندازه مناسب
                 tempCtx.drawImage(image, startX, startY, targetWidth, targetHeight);
@@ -612,7 +709,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     // تبدیل به سطح خاکستری با در نظر گرفتن شفافیت
                     if (a < 128) {
-                        grayData[i / 4] = 255; // شفاف
+                        grayData[i / 4] = 255; // شفاف یا سفید
                     } else {
                         grayData[i / 4] = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
                     }
@@ -620,7 +717,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // تنظیمات پیشرفته برای تبدیل به SVG
                 const potraceOptions = {
-                    turdsize: 3,  // حذف نویز کوچک
+                    turdsize: 2,  // حذف نویز کوچک
                     turnpolicy: potrace.TURNPOLICY_MINORITY,
                     alphamax: 1,  // مقدار کمتر برای خطوط زاویه‌دار بیشتر
                     opticurve: true,  // منحنی‌های بهینه
@@ -638,61 +735,134 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
                 
                 // تبدیل به مسیرهای SVG
-                const svgString = potrace.getSVG(pngData, potraceOptions);
-                
-                // ایجاد SVG با امکانات بیشتر با استفاده از SVG.js
-                const draw = SVG().size(size.width, size.height);
-                
-                // تولید بهتر SVG با توجه به ویژگی‌های تصویر
-                // ایجاد یک المان تصویر برای استفاده به عنوان الگو
-                const pattern = draw.pattern(size.width, size.height, function(add) {
-                    add.image(image.src, size.width, size.height);
-                });
-                
-                // استخراج مسیرهای SVG از خروجی Potrace
-                const pathRegex = /<path[^>]*d="([^"]*)"[^>]*>/g;
-                let match;
-                while ((match = pathRegex.exec(svgString)) !== null) {
-                    const pathD = match[1];
-                    // ایجاد مسیر با الگوی تصویر اصلی برای حفظ رنگ‌ها
-                    draw.path(pathD).fill(pattern);
-                }
-                
-                // تنظیم نسخه و ویژگی‌های SVG
-                const svgOutput = draw.svg()
-                    .replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"')
-                    .replace('</svg>', `<title>${originalFileName} - ${size.width}x${size.height}</title></svg>`);
-                
-                // تبدیل SVG به DataURL
-                const blob = new Blob([svgOutput], { type: 'image/svg+xml' });
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const dataUrl = e.target.result;
+                try {
+                    const svgString = potrace.getSVG(pngData, potraceOptions);
                     
-                    // برگرداندن نتیجه نهایی
-                    resolve({
-                        dataUrl,
-                        size,
-                        fileName: getFileName(size),
-                        type: 'image/svg+xml'
-                    });
-                };
-                reader.readAsDataURL(blob);
+                    // ایجاد SVG با امکانات بیشتر با استفاده از SVG.js
+                    const draw = SVG().size(size.width, size.height);
+                    
+                    // استخراج مسیرهای SVG از خروجی Potrace
+                    const pathRegex = /<path[^>]*d="([^"]*)"[^>]*>/g;
+                    let match;
+                    let pathsFound = 0;
+                    
+                    while ((match = pathRegex.exec(svgString)) !== null) {
+                        pathsFound++;
+                        const pathD = match[1];
+                        // ایجاد مسیر با رنگ مشکی برای ساده‌سازی
+                        draw.path(pathD).fill('#000000');
+                    }
+                    
+                    // اگر هیچ مسیری پیدا نشد یا مسیرها بسیار کم هستند، خطا برگرداند
+                    if (pathsFound < 1) {
+                        throw new Error('مسیر SVG معتبری یافت نشد یا تصویر بسیار ساده است');
+                    }
+                    
+                    // تنظیم نسخه و ویژگی‌های SVG
+                    const svgOutput = draw.svg()
+                        .replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"')
+                        .replace('</svg>', `<title>${originalFileName} - ${size.width}x${size.height}</title></svg>`);
+                    
+                    // تبدیل SVG به DataURL
+                    const blob = new Blob([svgOutput], { type: 'image/svg+xml' });
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const dataUrl = e.target.result;
+                        
+                        // برگرداندن نتیجه نهایی
+                        resolve({
+                            dataUrl,
+                            size,
+                            fileName: getFileName(size, 'svg'),
+                            type: 'image/svg+xml'
+                        });
+                    };
+                    reader.onerror = function() {
+                        console.error('خطا در خواندن فایل SVG');
+                        createPNGFallback();
+                    };
+                    reader.readAsDataURL(blob);
+                } catch (potraceError) {
+                    console.error('خطا در تبدیل Potrace:', potraceError);
+                    createPNGFallback();
+                }
             } catch (error) {
                 console.error('خطا در تبدیل به SVG:', error);
-                reject(error);
+                createPNGFallback();
+            }
+            
+            // تابع کمکی برای ایجاد PNG در صورت خطا
+            function createPNGFallback() {
+                console.log('استفاده از PNG به عنوان جایگزین به دلیل خطا در تبدیل SVG');
+                
+                // ایجاد کنواس جدید
+                const canvas = document.createElement('canvas');
+                canvas.width = size.width;
+                canvas.height = size.height;
+                const ctx = canvas.getContext('2d');
+                
+                // حفظ نسبت تصویر
+                let targetWidth, targetHeight, startX, startY;
+                
+                const originalRatio = image.width / image.height;
+                const targetRatio = size.width / size.height;
+                
+                if (originalRatio > targetRatio) {
+                    targetHeight = size.height;
+                    targetWidth = targetHeight * originalRatio;
+                    startX = (size.width - targetWidth) / 2;
+                    startY = 0;
+                } else {
+                    targetWidth = size.width;
+                    targetHeight = targetWidth / originalRatio;
+                    startX = 0;
+                    startY = (size.height - targetHeight) / 2;
+                }
+                
+                // پر کردن پس‌زمینه با شفافیت
+                ctx.clearRect(0, 0, size.width, size.height);
+                
+                // رسم تصویر با اندازه مناسب
+                ctx.drawImage(image, startX, startY, targetWidth, targetHeight);
+                
+                // تبدیل به DataURL با فرمت PNG
+                const dataUrl = canvas.toDataURL('image/png');
+                
+                // برگرداندن نتیجه به عنوان PNG
+                resolve({
+                    dataUrl,
+                    size,
+                    fileName: getFileName(size, 'png'),
+                    type: 'image/png',
+                    isFallback: true // علامت‌گذاری به عنوان جایگزین
+                });
             }
         });
     }
 
-    // ساخت نام فایل برای هر سایز
-    function getFileName(size) {
-        return `${originalFileName}_${size.width}x${size.height}.${outputExtension}`;
+    // ایجاد نام فایل با فرمت مناسب
+    function getFileName(size, format) {
+        // استفاده از format اگر داده شده، در غیر این صورت استفاده از outputExtension
+        const extension = format || outputExtension;
+        
+        // ساخت نام فایل
+        let filename = originalFileName;
+        
+        // حذف پسوند فایل اصلی
+        const extIndex = filename.lastIndexOf('.');
+        if (extIndex !== -1) {
+            filename = filename.substring(0, extIndex);
+        }
+        
+        // افزودن اندازه و پسوند جدید
+        filename += `-${size.width}x${size.height}.${extension}`;
+        
+        return filename;
     }
 
     // ایجاد المان نمایش برای هر سایز
     function createSizeItem(result) {
-        const { dataUrl, size, fileName } = result;
+        const { dataUrl, size, fileName, isFallback } = result;
         
         const sizeItem = document.createElement('div');
         sizeItem.className = 'size-item';
@@ -716,10 +886,20 @@ document.addEventListener('DOMContentLoaded', () => {
         title.textContent = size.label;
         
         const description = document.createElement('p');
-        description.textContent = `${size.description} - ${outputExtension.toUpperCase()}`;
+        const fileFormat = result.type.split('/')[1].toUpperCase().replace('SVG+XML', 'SVG');
+        description.textContent = `${size.description} - ${fileFormat}`;
         
         info.appendChild(title);
         info.appendChild(description);
+        
+        // نمایش هشدار در صورت استفاده از جایگزین
+        if (isFallback && result.type === 'image/png' && outputExtension === 'svg') {
+            const fallbackWarning = document.createElement('p');
+            fallbackWarning.className = 'fallback-warning';
+            fallbackWarning.textContent = 'تبدیل به SVG انجام نشد، از PNG استفاده شد';
+            info.appendChild(fallbackWarning);
+        }
+        
         sizeItem.appendChild(info);
         
         // ایجاد بخش دانلود
